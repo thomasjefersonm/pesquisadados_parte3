@@ -8,7 +8,7 @@ Notebook: `002_extracao_para_landing`
 
 | Condição | O que significa |
 |---|---|
-| Banco **externo** | A origem é um PostgreSQL na nuvem, fora do Databricks, acessado pela rede com `psycopg2`. |
+| Banco **externo** | A origem é um PostgreSQL na nuvem, fora do Databricks, acessado pela rede com `pg8000`. |
 | Extrair **todas** as tabelas | O notebook pergunta ao banco quais tabelas existem (`information_schema.tables`) e copia todas, sem lista fixa no código. |
 | Gravar no schema **LANDING/DADOS** | Os arquivos ficam no volume `dados`, dentro do schema `landing`. |
 | Formato **CSV** | Como o banco é relacional (tabelas com linhas e colunas), o formato pedido é CSV. |
@@ -19,27 +19,26 @@ A **landing** é a "zona de pouso": recebe a **cópia bruta** dos dados exatamen
 Como a origem é um banco **relacional**, o formato exigido é **CSV** (para um banco não relacional seria JSON).
 
 ## Como funciona
-1. Conecta no PostgreSQL externo com `psycopg2` (SSL), usando os parâmetros do Job (`pg_host`, `pg_user`, `pg_password`...). A senha não fica no código.
+1. Conecta no PostgreSQL externo com `pg8000` (SSL), usando os parâmetros do Job (`pg_host`, `pg_user`, `pg_password`...). A senha não fica no código.
 2. Lista **todas** as tabelas do schema `public` em `information_schema.tables`. Como a lista vem do próprio banco, uma tabela nova também seria extraída sem mudar o código.
 3. Executa `SELECT *` em cada tabela e grava um arquivo `<tabela>.csv`, com cabeçalho, no volume `dados` do schema `landing`.
 
 ```python
-import psycopg2
+import pg8000.dbapi
 import pandas as pd
 
-conexao = psycopg2.connect(host=..., port=5432, dbname="postgres",
-                           user=..., password=..., sslmode="require")
+conexao = pg8000.dbapi.connect(host=..., port=5432, database="postgres",
+                               user=..., password=..., ssl_context=contexto_ssl, timeout=20)
+cursor = conexao.cursor()
 
-with conexao.cursor() as cursor:
-    cursor.execute("""SELECT table_name FROM information_schema.tables
-                      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'""")
-    tabelas = [linha[0] for linha in cursor.fetchall()]
+cursor.execute("""SELECT table_name FROM information_schema.tables
+                  WHERE table_schema = 'public' AND table_type = 'BASE TABLE'""")
+tabelas = [linha[0] for linha in cursor.fetchall()]
 
 for tabela in tabelas:
-    with conexao.cursor() as cursor:
-        cursor.execute(f'SELECT * FROM "public"."{tabela}"')
-        colunas = [c[0] for c in cursor.description]
-        df = pd.DataFrame(cursor.fetchall(), columns=colunas)
+    cursor.execute(f'SELECT * FROM "public"."{tabela}"')
+    colunas = [c[0] for c in cursor.description]
+    df = pd.DataFrame(cursor.fetchall(), columns=colunas)
     df.to_csv(f"/Volumes/workspace/landing/dados/{tabela}.csv", index=False)
 
 conexao.close()

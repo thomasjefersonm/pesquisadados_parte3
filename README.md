@@ -54,7 +54,7 @@ Criar um PostgreSQL gratuito no Supabase ou Neon, executar `sql/lojadb_postgres.
 ![Preparando ambiente](docs/img/02_origem_lojadb.jpg)
 
 ### 3. Extração → LANDING/DADOS (`002_extracao_para_landing`)
-Conecta no PostgreSQL externo com `psycopg2`, lista todas as tabelas do `LojaDB` e grava um CSV por tabela em `/Volumes/workspace/landing/dados`.
+Conecta no PostgreSQL externo com `pg8000`, lista todas as tabelas do `LojaDB` e grava um CSV por tabela em `/Volumes/workspace/landing/dados`.
 
 ![Landing](docs/img/03_landing.jpg)
 
