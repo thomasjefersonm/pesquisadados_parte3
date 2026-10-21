@@ -1,0 +1,8 @@
+site_name: Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão
+repo_url: https://github.com/thomasjefersonm/pesquisadados_parte3
+edit_uri: edit/main/docs/
+nav:
+  - Contextualização: index.md
+  - Pipeline medalhão: pipeline.md
+  - Jobs & Pipelines: job.md
+theme: readthedocs
