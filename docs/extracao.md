@@ -8,7 +8,8 @@ Notebook: `002_extracao_para_landing`
 
 | Condição | O que significa |
 |---|---|
-| Extrair **todas** as tabelas | O notebook pergunta ao banco quais tabelas existem (`SHOW TABLES`) e copia todas, sem lista fixa no código. |
+| Banco **externo** | A origem é um PostgreSQL na nuvem, fora do Databricks, acessado pela rede com `psycopg2`. |
+| Extrair **todas** as tabelas | O notebook pergunta ao banco quais tabelas existem (`information_schema.tables`) e copia todas, sem lista fixa no código. |
 | Gravar no schema **LANDING/DADOS** | Os arquivos ficam no volume `dados`, dentro do schema `landing`. |
 | Formato **CSV** | Como o banco é relacional (tabelas com linhas e colunas), o formato pedido é CSV. |
 
@@ -18,17 +19,30 @@ A **landing** é a "zona de pouso": recebe a **cópia bruta** dos dados exatamen
 Como a origem é um banco **relacional**, o formato exigido é **CSV** (para um banco não relacional seria JSON).
 
 ## Como funciona
-1. Lista **todas** as tabelas do banco de origem com `SHOW TABLES`. Como a lista vem do próprio banco, uma tabela nova também seria extraída sem mudar o código.
-2. Lê cada tabela e grava um arquivo `<tabela>.csv`, com cabeçalho, no volume `dados` do schema `landing`.
+1. Conecta no PostgreSQL externo com `psycopg2` (SSL), usando os parâmetros do Job (`pg_host`, `pg_user`, `pg_password`...). A senha não fica no código.
+2. Lista **todas** as tabelas do schema `public` em `information_schema.tables`. Como a lista vem do próprio banco, uma tabela nova também seria extraída sem mudar o código.
+3. Executa `SELECT *` em cada tabela e grava um arquivo `<tabela>.csv`, com cabeçalho, no volume `dados` do schema `landing`.
 
 ```python
-caminho_landing = '/Volumes/workspace/landing/dados'
+import psycopg2
+import pandas as pd
 
-tabelas = [t.tableName for t in spark.sql("SHOW TABLES IN workspace.lojadb").collect()]
+conexao = psycopg2.connect(host=..., port=5432, dbname="postgres",
+                           user=..., password=..., sslmode="require")
+
+with conexao.cursor() as cursor:
+    cursor.execute("""SELECT table_name FROM information_schema.tables
+                      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'""")
+    tabelas = [linha[0] for linha in cursor.fetchall()]
 
 for tabela in tabelas:
-    df = spark.read.table(f"workspace.lojadb.{tabela}")
-    df.toPandas().to_csv(f"{caminho_landing}/{tabela}.csv", index=False)
+    with conexao.cursor() as cursor:
+        cursor.execute(f'SELECT * FROM "public"."{tabela}"')
+        colunas = [c[0] for c in cursor.description]
+        df = pd.DataFrame(cursor.fetchall(), columns=colunas)
+    df.to_csv(f"/Volumes/workspace/landing/dados/{tabela}.csv", index=False)
+
+conexao.close()
 ```
 
 ## Resultado

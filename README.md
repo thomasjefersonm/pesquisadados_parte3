@@ -19,20 +19,21 @@ Engenharia de Dados · Engenharia de Software 5ª fase · SATC · Prof. Jorge Lu
 
 | # | Etapa | Notebook | Origem → Destino | Formato |
 |---|---|---|---|---|
-| 1 | Extração | `002_extracao_para_landing` | banco `lojadb` → schema **LANDING** / volume **DADOS** | CSV |
+| 1 | Extração | `002_extracao_para_landing` | PostgreSQL externo `LojaDB` → schema **LANDING** / volume **DADOS** | CSV |
 | 2 | Ingestão | `003_landing_para_bronze` | LANDING/DADOS → schema **BRONZE** | Delta Lake |
 | 3 | Data Quality | `004_bronze_para_silver` | BRONZE → schema **SILVER** | Delta Lake |
 | 4 | Modelagem | `005_silver_para_gold` | SILVER → schema **GOLD** (Ralph Kimball) | Delta Lake |
 | 5 | Automação | Job `job_lakehouse_medalhao` | executa os notebooks em sequência | Jobs & Pipelines |
 
-O notebook `001_preparando_ambiente` cria o banco relacional de origem `lojadb` (tabelas `clientes` e `pedidos`, as mesmas dos trabalhos 1 e 2), os schemas `landing`, `bronze`, `silver`, `gold` e o volume `landing.dados`. O `006_destruindo_ambiente` apaga tudo e não faz parte do Job.
+O banco relacional de origem `LojaDB` é um **PostgreSQL externo ao Databricks** (Supabase/Neon), criado pelo script [`sql/lojadb_postgres.sql`](sql/lojadb_postgres.sql) (tabelas `clientes` e `pedidos`, as mesmas dos trabalhos 1 e 2). O notebook `001_preparando_ambiente` cria os schemas `landing`, `bronze`, `silver`, `gold` e o volume `landing.dados`. O `006_destruindo_ambiente` apaga tudo e não faz parte do Job.
 
 ## Ferramentas utilizadas
 
 | Ferramenta | Para que serve |
 |---|---|
+| PostgreSQL (Supabase/Neon) | Banco relacional de origem, externo ao Databricks |
 | Databricks Free Edition | Plataforma PaaS (notebooks, Unity Catalog, Jobs & Pipelines) |
-| Unity Catalog (catálogo `workspace`) | Schemas `lojadb`, `landing`, `bronze`, `silver`, `gold` e volume `landing.dados` |
+| Unity Catalog (catálogo `workspace`) | Schemas `landing`, `bronze`, `silver`, `gold` e volume `landing.dados` |
 | Apache Spark (PySpark / SQL) | Processamento dos dados |
 | Delta Lake | Formato das tabelas gerenciadas (MANAGED) das camadas bronze, silver e gold |
 | Git e GitHub | Versionamento (Git folder no Databricks) |
@@ -45,12 +46,15 @@ O notebook `001_preparando_ambiente` cria o banco relacional de origem `lojadb` 
 
 ![Git folder](docs/img/01_git_folder.jpg)
 
-### 2. Preparando o ambiente (`001_preparando_ambiente`)
+### 2. Banco de origem externo
+Criar um PostgreSQL gratuito no Supabase ou Neon, executar `sql/lojadb_postgres.sql` e preencher os parâmetros do Job (`pg_host`, `pg_port`, `pg_database`, `pg_user`, `pg_password`).
+
+### 2.1 Preparando o ambiente (`001_preparando_ambiente`)
 
 ![Preparando ambiente](docs/img/02_origem_lojadb.jpg)
 
 ### 3. Extração → LANDING/DADOS (`002_extracao_para_landing`)
-Lista todas as tabelas do `lojadb` e grava um CSV por tabela em `/Volumes/workspace/landing/dados`.
+Conecta no PostgreSQL externo com `psycopg2`, lista todas as tabelas do `LojaDB` e grava um CSV por tabela em `/Volumes/workspace/landing/dados`.
 
 ![Landing](docs/img/03_landing.jpg)
 
@@ -118,6 +122,8 @@ pesquisadados_parte3/
 │   ├── 004_bronze_para_silver.py
 │   ├── 005_silver_para_gold.py
 │   └── 006_destruindo_ambiente.py
+├── sql/
+│   └── lojadb_postgres.sql   # banco de origem (PostgreSQL externo)
 ├── resources/
 │   └── job_medalhao.json     # definição do Job (Jobs & Pipelines)
 └── docs/                     # páginas do MkDocs e prints (docs/img)

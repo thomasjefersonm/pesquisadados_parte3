@@ -5,11 +5,11 @@
 ## Databricks Free Edition
 O **Databricks** é uma plataforma de dados em nuvem no modelo **PaaS** (*Platform as a Service*): o grupo não instala nem administra servidores, Spark ou armazenamento, apenas usa os recursos prontos da plataforma. A **Free Edition** é a versão gratuita, com computação **serverless** (o cluster é criado e desligado automaticamente a cada execução).
 
-Nos trabalhos 1 e 2 o pipeline rodava localmente, com Docker (SQL Server e MinIO), Spark e Delta Lake instalados na máquina. Neste trabalho **tudo fica dentro do Databricks**: banco de origem, arquivos brutos, tabelas Delta, modelagem dimensional e orquestração.
+Nos trabalhos 1 e 2 o pipeline rodava localmente, com Docker (SQL Server e MinIO), Spark e Delta Lake instalados na máquina. Neste trabalho o banco de origem continua **fora** do Databricks (um PostgreSQL na nuvem); **dentro** do Databricks ficam a extração, os arquivos brutos, as tabelas Delta, a modelagem dimensional e a orquestração.
 
 | Trabalho 2 (local) | Trabalho 3 (Databricks) |
 |---|---|
-| SQL Server em Docker (`LojaDB`) | Schema `workspace.lojadb` |
+| SQL Server em Docker (`LojaDB`) | PostgreSQL externo na nuvem (`LojaDB`) |
 | Bucket `landing-zone` no MinIO | Volume `workspace.landing.dados` |
 | Bucket `bronze` no MinIO | Schema `workspace.bronze` |
 | — | Schema `workspace.silver` |
@@ -30,13 +30,17 @@ O repositório do GitHub foi importado no Databricks como **Git folder** (*Works
 
 ![Git folder](img/01_git_folder.jpg)
 
+## Banco de dados de origem (externo ao Databricks)
+O banco de origem é um **PostgreSQL gerenciado na nuvem** (Supabase/Neon, plano gratuito), **fora do Databricks**, como no trabalho 2 (em que a origem era um SQL Server em Docker). O Databricks não é um banco transacional: ele só **extrai** os dados da origem e processa as camadas da arquitetura medalhão.
+
+1. Criar o projeto/banco no Supabase ou Neon.
+2. Executar o script [`sql/lojadb_postgres.sql`](https://github.com/thomasjefersonm/pesquisadados_parte3/blob/main/sql/lojadb_postgres.sql) no SQL Editor do serviço (cria e popula `clientes` e `pedidos`).
+3. Copiar host, porta, banco, usuário e senha da conexão e informar como **parâmetros do Job** (`pg_host`, `pg_port`, `pg_database`, `pg_user`, `pg_password`). A senha não é versionada no GitHub.
+
 ## Notebook 001 – Preparando o ambiente
 Cria todos os objetos usados pelo pipeline:
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS workspace.lojadb
-COMMENT 'Schema/Database de origem (banco relacional LojaDB)';
-
 CREATE SCHEMA IF NOT EXISTS workspace.landing
 COMMENT 'Schema/Database para dados brutos (landing)';
 
@@ -53,9 +57,9 @@ CREATE SCHEMA IF NOT EXISTS workspace.gold
 COMMENT 'Schema/Database para dados gold (delta) - modelagem dimensional';
 ```
 
-Em seguida cria e popula as tabelas `clientes` e `pedidos` do banco de origem `lojadb`, com o mesmo DDL e os mesmos dados dos trabalhos 1 e 2 (veja a página de contextualização).
+Nenhuma tabela de origem é criada no Databricks: as tabelas `clientes` e `pedidos` ficam no PostgreSQL externo.
 
-![Banco de origem lojadb](img/02_origem_lojadb.jpg)
+![Banco de origem LojaDB no PostgreSQL externo](img/02_origem_lojadb.jpg)
 
 ## Notebook 006 – Destruindo o ambiente
 Apaga todos os schemas com `DROP SCHEMA ... CASCADE` (tabelas e volume juntos) e confirma com `SHOW SCHEMAS IN workspace`. Serve para recomeçar do zero e **não** faz parte do Job.

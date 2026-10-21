@@ -3,32 +3,89 @@
   "tasks": [
     {
       "task_key": "001_preparando_ambiente",
-      "notebook_task": { "notebook_path": "notebooks/001_preparando_ambiente", "source": "GIT" }
+      "notebook_task": {
+        "notebook_path": "notebooks/001_preparando_ambiente",
+        "source": "GIT"
+      }
     },
     {
       "task_key": "002_extracao_para_landing",
-      "depends_on": [{ "task_key": "001_preparando_ambiente" }],
-      "notebook_task": { "notebook_path": "notebooks/002_extracao_para_landing", "source": "GIT" }
+      "depends_on": [
+        {
+          "task_key": "001_preparando_ambiente"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "notebooks/002_extracao_para_landing",
+        "source": "GIT"
+      }
     },
     {
       "task_key": "003_landing_para_bronze",
-      "depends_on": [{ "task_key": "002_extracao_para_landing" }],
-      "notebook_task": { "notebook_path": "notebooks/003_landing_para_bronze", "source": "GIT" }
+      "depends_on": [
+        {
+          "task_key": "002_extracao_para_landing"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "notebooks/003_landing_para_bronze",
+        "source": "GIT"
+      }
     },
     {
       "task_key": "004_bronze_para_silver",
-      "depends_on": [{ "task_key": "003_landing_para_bronze" }],
-      "notebook_task": { "notebook_path": "notebooks/004_bronze_para_silver", "source": "GIT" }
+      "depends_on": [
+        {
+          "task_key": "003_landing_para_bronze"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "notebooks/004_bronze_para_silver",
+        "source": "GIT"
+      }
     },
     {
       "task_key": "005_silver_para_gold",
-      "depends_on": [{ "task_key": "004_bronze_para_silver" }],
-      "notebook_task": { "notebook_path": "notebooks/005_silver_para_gold", "source": "GIT" }
+      "depends_on": [
+        {
+          "task_key": "004_bronze_para_silver"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "notebooks/005_silver_para_gold",
+        "source": "GIT"
+      }
     }
   ],
   "git_source": {
     "git_url": "https://github.com/thomasjefersonm/pesquisadados_parte3",
     "git_provider": "gitHub",
     "git_branch": "main"
-  }
+  },
+  "parameters": [
+    {
+      "name": "pg_host",
+      "default": "<host do PostgreSQL>"
+    },
+    {
+      "name": "pg_port",
+      "default": "5432"
+    },
+    {
+      "name": "pg_database",
+      "default": "postgres"
+    },
+    {
+      "name": "pg_user",
+      "default": "<usuario>"
+    },
+    {
+      "name": "pg_password",
+      "default": "<preencher no Databricks - nao versionar>"
+    },
+    {
+      "name": "pg_schema",
+      "default": "public"
+    }
+  ]
 }

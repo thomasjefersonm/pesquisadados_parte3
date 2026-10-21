@@ -7,7 +7,7 @@ Trabalho 3 da disciplina **Engenharia de Dados** (Engenharia de Software – 5ª
 Construir um pipeline de dados no **Databricks Free Edition** implementando a **arquitetura medalhão** (experiência PaaS): **Landing → Bronze → Silver → Gold**, com todas as etapas encadeadas em um Job de **Jobs & Pipelines**.
 
 ## Cenário e conjunto de dados
-Mesma loja virtual fictícia dos trabalhos 1 e 2. O banco relacional de origem `LojaDB` é criado no próprio Databricks, no schema `workspace.lojadb`, pelo notebook `001_preparando_ambiente`:
+Mesma loja virtual fictícia dos trabalhos 1 e 2. O banco relacional de origem `LojaDB` é um **PostgreSQL externo ao Databricks**, hospedado na nuvem (Supabase/Neon), criado pelo script `sql/lojadb_postgres.sql`. O Databricks só extrai os dados dele (notebook `002`):
 
 | Tabela | Conteúdo |
 |---|---|
@@ -19,18 +19,18 @@ Mesma loja virtual fictícia dos trabalhos 1 e 2. O banco relacional de origem `
 
 Um cliente possui vários pedidos (relação 1:N por `id_cliente`).
 
-### DDL (Databricks SQL)
+### DDL (PostgreSQL)
 ```sql
-CREATE TABLE workspace.lojadb.clientes (
-  id_cliente INT NOT NULL,
+CREATE TABLE clientes (
+  id_cliente INT NOT NULL PRIMARY KEY,
   nome       VARCHAR(100) NOT NULL,
   cidade     VARCHAR(100),
   uf         CHAR(2)
 );
 
-CREATE TABLE workspace.lojadb.pedidos (
-  id_pedido      INT NOT NULL,
-  id_cliente     INT NOT NULL,
+CREATE TABLE pedidos (
+  id_pedido      INT NOT NULL PRIMARY KEY,
+  id_cliente     INT NOT NULL REFERENCES clientes (id_cliente),
   produto        VARCHAR(100) NOT NULL,
   quantidade     INT NOT NULL,
   valor_unitario DECIMAL(10,2) NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE workspace.lojadb.pedidos (
 
 | Camada | Pergunta que responde | Em linguagem simples |
 |---|---|---|
-| **Origem** (`lojadb`) | De onde vêm os dados? | O banco de dados da loja, com clientes e pedidos. |
+| **Origem** (PostgreSQL externo) | De onde vêm os dados? | O banco de dados da loja, fora do Databricks, com clientes e pedidos. |
 | **Landing** | Os dados foram copiados? | Uma "caixa de entrada" com a cópia dos dados em arquivos CSV, sem nenhuma alteração. |
 | **Bronze** | Os dados estão guardados com segurança? | Os mesmos dados, agora em tabelas Delta, que registram o histórico e protegem contra gravações pela metade. |
 | **Silver** | Os dados estão corretos? | Os dados revisados: nomes padronizados, tipos corrigidos, sem duplicados e sem valores inválidos. |

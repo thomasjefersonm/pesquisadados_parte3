@@ -6,6 +6,8 @@
 # MAGIC ### (volume) catalogo.schema.volume
 # MAGIC
 # MAGIC Apaga os schemas/databases, as tabelas e o volume. Não faz parte do Job.
+# MAGIC
+# MAGIC O banco de origem (PostgreSQL externo) **não** é apagado: ele não pertence ao Databricks.
 
 # COMMAND ----------
 
@@ -21,9 +23,6 @@
 # MAGIC
 # MAGIC -- Apagar todas as tabelas e volumes da camada landing
 # MAGIC DROP SCHEMA IF EXISTS workspace.landing CASCADE;
-# MAGIC
-# MAGIC -- Apagar o banco de dados de origem
-# MAGIC DROP SCHEMA IF EXISTS workspace.lojadb CASCADE;
 
 # COMMAND ----------
 

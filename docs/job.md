@@ -21,13 +21,15 @@ Cada tarefa depende da anterior (`depends_on`), formando a sequência da arquite
 
 | Tarefa | Notebook | Etapa |
 |---|---|---|
-| 1 | `001_preparando_ambiente` | Schemas, volume e banco de origem |
-| 2 | `002_extracao_para_landing` | Extração → LANDING/DADOS (CSV) |
+| 1 | `001_preparando_ambiente` | Schemas e volume |
+| 2 | `002_extracao_para_landing` | Extração do PostgreSQL externo → LANDING/DADOS (CSV) |
 | 3 | `003_landing_para_bronze` | Ingestão → BRONZE (Delta) |
 | 4 | `004_bronze_para_silver` | Data Quality → SILVER |
 | 5 | `005_silver_para_gold` | Modelagem dimensional → GOLD |
 
 Todas as tarefas usam computação **serverless**. A definição do Job está em `resources/job_medalhao.json` e pode ser recriada em *Jobs & Pipelines → Create job → Edit as JSON*. O notebook `006_destruindo_ambiente` fica fora do Job, pois só serve para limpar o ambiente.
+
+Os dados de conexão do banco externo são **parâmetros do Job** (`pg_host`, `pg_port`, `pg_database`, `pg_user`, `pg_password`, `pg_schema`). No JSON versionado a senha é só um marcador; o valor real é preenchido no Databricks.
 
 ![Job](img/07_job.jpg)
 
@@ -45,6 +47,6 @@ Execução completa com sucesso: as 5 tarefas em sequência, em cerca de 3 minut
 ![Execução do Job](img/08_job_execucao.jpg)
 
 ## Resultado no catálogo
-Depois da execução, o catálogo `workspace` contém os schemas `lojadb`, `landing`, `bronze`, `silver` e `gold`:
+Depois da execução, o catálogo `workspace` contém os schemas `landing`, `bronze`, `silver` e `gold` (a origem fica fora do Databricks):
 
 ![Catálogo](img/09_catalogo.jpg)
