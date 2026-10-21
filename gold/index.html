@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>4. Modelagem (Gold) - Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "4. Modelagem (Gold)";
+        var mkdocs_page_input_path = "gold.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Contextualização</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ambiente/">Ambiente Databricks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../extracao/">1. Extração (Landing)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../bronze/">2. Ingestão (Bronze)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../silver/">3. Data Quality (Silver)</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">4. Modelagem (Gold)</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#o-que-e-a-camada-gold">O que é a camada gold</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#modelagem-dimensional-ralph-kimball">Modelagem dimensional (Ralph Kimball)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#carga-das-dimensoes-merge-scd1">Carga das dimensões (MERGE / SCD1)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#carga-da-fato">Carga da fato</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resultado">Resultado</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#consulta-no-modelo-estrela">Consulta no modelo estrela</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../job/">5. Jobs & Pipelines</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">4. Modelagem (Gold)</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3/edit/main/docs/gold.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="4-modelagem-dimensional-gold">4. Modelagem dimensional → GOLD</h1>
+<p>Notebook: <code>005_silver_para_gold</code></p>
+<p><img alt="Modelo estrela gold" src="../assets/diagramas/gold.svg" /></p>
+<blockquote>
+<p><strong>Em poucas palavras:</strong> os dados são reorganizados em formato de <strong>estrela</strong>. No centro fica a tabela de pedidos (o que aconteceu, com quantidades e valores) e, ao redor, as tabelas que explicam cada pedido: <strong>quem</strong> comprou, <strong>o que</strong> comprou e <strong>quando</strong>. Assim fica fácil responder perguntas como "quanto cada estado comprou?".</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Condição</th>
+<th>O que significa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ler os dados da <strong>SILVER</strong></td>
+<td>Usa apenas os dados já revisados.</td>
+</tr>
+<tr>
+<td>Alimentar as <strong>tabelas dimensionais (Ralph Kimball)</strong></td>
+<td>Cria a fato <code>fato_pedidos</code> e as dimensões <code>dim_cliente</code>, <code>dim_produto</code> e <code>dim_tempo</code>.</td>
+</tr>
+<tr>
+<td>Schema <strong>GOLD</strong></td>
+<td>As tabelas finais ficam no schema <code>gold</code>, prontas para relatórios e dashboards.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="o-que-e-a-camada-gold">O que é a camada gold</h2>
+<p>A <strong>gold</strong> contém os dados <strong>prontos para consumo analítico</strong> (BI, dashboards, relatórios), organizados segundo a <strong>modelagem dimensional de Ralph Kimball</strong>.</p>
+<h2 id="modelagem-dimensional-ralph-kimball">Modelagem dimensional (Ralph Kimball)</h2>
+<p>Kimball propõe separar os dados em dois tipos de tabela, formando um <strong>modelo estrela</strong>:</p>
+<ul>
+<li><strong>Fato</strong>: registra os eventos do negócio e as <strong>métricas</strong> numéricas (quantidade, valor). Aqui, cada pedido.</li>
+<li><strong>Dimensão</strong>: descreve o contexto dos fatos, respondendo "quem, o quê, quando". Aqui, cliente, produto e tempo.</li>
+</ul>
+<p>Outros conceitos aplicados:</p>
+<ul>
+<li><strong>Chave substituta (SK)</strong>: cada dimensão tem uma chave própria (<code>SK_CLIENTE</code>, <code>SK_PRODUTO</code>), gerada pelo Delta com <code>bigint generated by default as identity</code>, independente da chave do sistema de origem.</li>
+<li><strong>SCD tipo 1</strong>: as dimensões são carregadas com <code>MERGE</code>. Se um cliente mudar de cidade, o registro é <strong>sobrescrito</strong> (sem guardar histórico); se for novo, é <strong>inserido</strong>.</li>
+<li><strong>Dimensão tempo</strong>: um calendário gerado com todos os dias de 2026, com ano, mês, nome do mês, dia e dia da semana.</li>
+<li><strong>Dimensão degenerada</strong>: <code>CODIGO_PEDIDO</code> e <code>STATUS</code> ficam direto na fato, pois não têm outros atributos que justifiquem uma dimensão.</li>
+</ul>
+<pre><code>             dim_cliente
+                  │
+dim_produto ── fato_pedidos ── dim_tempo
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Tabela</th>
+<th>Tipo</th>
+<th>Chave</th>
+<th>Colunas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gold.dim_cliente</code></td>
+<td>Dimensão</td>
+<td><code>SK_CLIENTE</code></td>
+<td>CODIGO_CLIENTE, NOME, CIDADE, UNIDADE_FEDERATIVA</td>
+</tr>
+<tr>
+<td><code>gold.dim_produto</code></td>
+<td>Dimensão</td>
+<td><code>SK_PRODUTO</code></td>
+<td>PRODUTO</td>
+</tr>
+<tr>
+<td><code>gold.dim_tempo</code></td>
+<td>Dimensão</td>
+<td><code>Data</code></td>
+<td>Ano, Mes, NomeMes, Dia, NomeDiaSemana, NumeroDiaSemana</td>
+</tr>
+<tr>
+<td><code>gold.fato_pedidos</code></td>
+<td>Fato</td>
+<td>—</td>
+<td>FK_TEMPO, FK_CLIENTE, FK_PRODUTO, CODIGO_PEDIDO, STATUS, QUANTIDADE, VALOR_UNITARIO, VALOR_TOTAL</td>
+</tr>
+</tbody>
+</table>
+<h2 id="carga-das-dimensoes-merge-scd1">Carga das dimensões (MERGE / SCD1)</h2>
+<pre><code class="language-sql">WITH cliente_relacional AS (
+    SELECT codigo_cliente, nome, cidade, unidade_federativa
+      FROM clientes
+)
+MERGE INTO gold.dim_cliente AS d
+USING cliente_relacional AS r
+ON r.codigo_cliente = d.codigo_cliente
+WHEN MATCHED AND (r.nome &lt;&gt; d.nome OR r.cidade &lt;&gt; d.cidade OR r.unidade_federativa &lt;&gt; d.unidade_federativa) THEN
+    UPDATE SET nome = r.nome, cidade = r.cidade, unidade_federativa = r.unidade_federativa
+WHEN NOT MATCHED THEN
+    INSERT (codigo_cliente, nome, cidade, unidade_federativa)
+    VALUES (r.codigo_cliente, r.nome, r.cidade, r.unidade_federativa)
+</code></pre>
+<h2 id="carga-da-fato">Carga da fato</h2>
+<p>A fato busca a chave substituta de cada dimensão pelo valor natural (código do cliente, nome do produto e data):</p>
+<pre><code class="language-sql">insert into gold.fato_pedidos
+select dtem.data, dcli.sk_cliente, dpro.sk_produto,
+       p.codigo_pedido, p.status, p.quantidade, p.valor_unitario, p.valor_total
+from pedidos p
+       inner join gold.dim_cliente dcli on p.codigo_cliente = dcli.codigo_cliente
+       inner join gold.dim_produto dpro on p.produto = dpro.produto
+       inner join gold.dim_tempo dtem   on p.data_pedido = dtem.data
+</code></pre>
+<h2 id="resultado">Resultado</h2>
+<p><strong><code>gold.dim_cliente</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>SK_CLIENTE</th>
+<th>CODIGO_CLIENTE</th>
+<th>NOME</th>
+<th>CIDADE</th>
+<th>UNIDADE_FEDERATIVA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>Ana Souza</td>
+<td>Criciúma</td>
+<td>SC</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3</td>
+<td>Carla Dias</td>
+<td>Porto Alegre</td>
+<td>RS</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>Bruno Lima</td>
+<td>Florianópolis</td>
+<td>SC</td>
+</tr>
+<tr>
+<td>4</td>
+<td>4</td>
+<td>Diego Melo</td>
+<td>Curitiba</td>
+<td>PR</td>
+</tr>
+</tbody>
+</table>
+<p>A <code>SK_CLIENTE</code> não acompanha o <code>CODIGO_CLIENTE</code>, e isso é esperado: a chave substituta é independente da chave da origem.</p>
+<p><img alt="dim_cliente" src="../img/06_gold_dim_cliente.jpg" /></p>
+<p><strong><code>gold.dim_produto</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>SK_PRODUTO</th>
+<th>PRODUTO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Mouse</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Monitor</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Headset</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Teclado</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Notebook</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>gold.dim_tempo</code></strong>: 365 linhas (todos os dias de 2026).</p>
+<p><strong><code>gold.fato_pedidos</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>FK_TEMPO</th>
+<th>FK_CLIENTE</th>
+<th>FK_PRODUTO</th>
+<th>CODIGO_PEDIDO</th>
+<th>STATUS</th>
+<th>QUANTIDADE</th>
+<th>VALOR_TOTAL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-09-01</td>
+<td>1</td>
+<td>5</td>
+<td>101</td>
+<td>PAGO</td>
+<td>1</td>
+<td>4500.00</td>
+</tr>
+<tr>
+<td>2026-09-02</td>
+<td>3</td>
+<td>1</td>
+<td>102</td>
+<td>PAGO</td>
+<td>2</td>
+<td>160.00</td>
+</tr>
+<tr>
+<td>2026-09-03</td>
+<td>2</td>
+<td>2</td>
+<td>103</td>
+<td>PENDENTE</td>
+<td>1</td>
+<td>1200.00</td>
+</tr>
+<tr>
+<td>2026-09-05</td>
+<td>1</td>
+<td>4</td>
+<td>104</td>
+<td>PENDENTE</td>
+<td>1</td>
+<td>250.00</td>
+</tr>
+<tr>
+<td>2026-09-06</td>
+<td>4</td>
+<td>3</td>
+<td>105</td>
+<td>CANCELADO</td>
+<td>1</td>
+<td>300.00</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="fato_pedidos" src="../img/06_gold_fato_pedidos.jpg" /></p>
+<h2 id="consulta-no-modelo-estrela">Consulta no modelo estrela</h2>
+<p>Total vendido por UF e status, cruzando a fato com a dimensão cliente:</p>
+<pre><code class="language-sql">select dcli.unidade_federativa, f.status, sum(f.valor_total) as total_vendido
+from gold.fato_pedidos f
+       inner join gold.dim_cliente dcli on f.fk_cliente = dcli.sk_cliente
+group by dcli.unidade_federativa, f.status
+order by dcli.unidade_federativa, f.status
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>UNIDADE_FEDERATIVA</th>
+<th>STATUS</th>
+<th>TOTAL_VENDIDO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PR</td>
+<td>CANCELADO</td>
+<td>300.00</td>
+</tr>
+<tr>
+<td>RS</td>
+<td>PENDENTE</td>
+<td>1200.00</td>
+</tr>
+<tr>
+<td>SC</td>
+<td>PAGO</td>
+<td>4660.00</td>
+</tr>
+<tr>
+<td>SC</td>
+<td>PENDENTE</td>
+<td>250.00</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../silver/" class="btn btn-neutral float-left" title="3. Data Quality (Silver)"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../job/" class="btn btn-neutral float-right" title="5. Jobs & Pipelines">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../silver/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../job/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

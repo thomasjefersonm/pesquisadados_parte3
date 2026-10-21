@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>1. Extração (Landing) - Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "1. Extra\u00e7\u00e3o (Landing)";
+        var mkdocs_page_input_path = "extracao.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Contextualização</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ambiente/">Ambiente Databricks</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">1. Extração (Landing)</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#o-que-e-a-camada-landing">O que é a camada landing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#como-funciona">Como funciona</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resultado">Resultado</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../bronze/">2. Ingestão (Bronze)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../silver/">3. Data Quality (Silver)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../gold/">4. Modelagem (Gold)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../job/">5. Jobs & Pipelines</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">1. Extração (Landing)</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3/edit/main/docs/extracao.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="1-extracao-landingdados">1. Extração → LANDING/DADOS</h1>
+<p>Notebook: <code>002_extracao_para_landing</code></p>
+<p><img alt="Extração" src="../assets/diagramas/extracao.svg" /></p>
+<blockquote>
+<p><strong>Em poucas palavras:</strong> é como tirar uma fotocópia de cada tabela do banco e guardar numa pasta. Nada é alterado: o objetivo é ter uma cópia fiel dos dados, para que o banco da loja não precise ser consultado de novo.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Condição</th>
+<th>O que significa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Banco <strong>externo</strong></td>
+<td>A origem é um PostgreSQL na nuvem, fora do Databricks, acessado pela rede com <code>pg8000</code>.</td>
+</tr>
+<tr>
+<td>Extrair <strong>todas</strong> as tabelas</td>
+<td>O notebook pergunta ao banco quais tabelas existem (<code>information_schema.tables</code>) e copia todas, sem lista fixa no código.</td>
+</tr>
+<tr>
+<td>Gravar no schema <strong>LANDING/DADOS</strong></td>
+<td>Os arquivos ficam no volume <code>dados</code>, dentro do schema <code>landing</code>.</td>
+</tr>
+<tr>
+<td>Formato <strong>CSV</strong></td>
+<td>Como o banco é relacional (tabelas com linhas e colunas), o formato pedido é CSV.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="o-que-e-a-camada-landing">O que é a camada landing</h2>
+<p>A <strong>landing</strong> é a "zona de pouso": recebe a <strong>cópia bruta</strong> dos dados exatamente como saíram da origem, em arquivos. Ela isola o banco de origem do restante do pipeline: depois da extração, nenhuma camada precisa consultar o banco novamente.</p>
+<p>Como a origem é um banco <strong>relacional</strong>, o formato exigido é <strong>CSV</strong> (para um banco não relacional seria JSON).</p>
+<h2 id="como-funciona">Como funciona</h2>
+<ol>
+<li>Conecta no PostgreSQL externo com <code>pg8000</code> (SSL), usando os parâmetros do Job (<code>pg_host</code>, <code>pg_user</code>, <code>pg_password</code>...). A senha não fica no código.</li>
+<li>Lista <strong>todas</strong> as tabelas do schema <code>public</code> em <code>information_schema.tables</code>. Como a lista vem do próprio banco, uma tabela nova também seria extraída sem mudar o código.</li>
+<li>Executa <code>SELECT *</code> em cada tabela e grava um arquivo <code>&lt;tabela&gt;.csv</code>, com cabeçalho, no volume <code>dados</code> do schema <code>landing</code>.</li>
+</ol>
+<pre><code class="language-python">import pg8000.dbapi
+import pandas as pd
+
+conexao = pg8000.dbapi.connect(host=..., port=5432, database=&quot;postgres&quot;,
+                               user=..., password=..., ssl_context=contexto_ssl, timeout=20)
+cursor = conexao.cursor()
+
+cursor.execute(&quot;&quot;&quot;SELECT table_name FROM information_schema.tables
+                  WHERE table_schema = 'public' AND table_type = 'BASE TABLE'&quot;&quot;&quot;)
+tabelas = [linha[0] for linha in cursor.fetchall()]
+
+for tabela in tabelas:
+    cursor.execute(f'SELECT * FROM &quot;public&quot;.&quot;{tabela}&quot;')
+    colunas = [c[0] for c in cursor.description]
+    df = pd.DataFrame(cursor.fetchall(), columns=colunas)
+    df.to_csv(f&quot;/Volumes/workspace/landing/dados/{tabela}.csv&quot;, index=False)
+
+conexao.close()
+</code></pre>
+<h2 id="resultado">Resultado</h2>
+<table>
+<thead>
+<tr>
+<th>Arquivo</th>
+<th>Linhas</th>
+<th>Tamanho</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/Volumes/workspace/landing/dados/clientes.csv</code></td>
+<td>4</td>
+<td>136 B</td>
+</tr>
+<tr>
+<td><code>/Volumes/workspace/landing/dados/pedidos.csv</code></td>
+<td>5</td>
+<td>282 B</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Landing" src="../img/03_landing.jpg" /></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../ambiente/" class="btn btn-neutral float-left" title="Ambiente Databricks"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../bronze/" class="btn btn-neutral float-right" title="2. Ingestão (Bronze)">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../ambiente/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../bronze/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

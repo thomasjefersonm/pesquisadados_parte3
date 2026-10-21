@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>5. Jobs & Pipelines - Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "5. Jobs \u0026 Pipelines";
+        var mkdocs_page_input_path = "job.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Contextualização</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ambiente/">Ambiente Databricks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../extracao/">1. Extração (Landing)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../bronze/">2. Ingestão (Bronze)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../silver/">3. Data Quality (Silver)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../gold/">4. Modelagem (Gold)</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">5. Jobs & Pipelines</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#o-que-e-um-job">O que é um Job</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#o-job-job_lakehouse_medalhao">O Job job_lakehouse_medalhao</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#execucao">Execução</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resultado-no-catalogo">Resultado no catálogo</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">5. Jobs & Pipelines</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3/edit/main/docs/job.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="5-jobs-pipelines">5. Jobs &amp; Pipelines</h1>
+<p><img alt="Fluxo do Job" src="../assets/diagramas/job.svg" /></p>
+<blockquote>
+<p><strong>Em poucas palavras:</strong> em vez de abrir e rodar cada notebook manualmente, o Job funciona como uma linha de produção: aperta-se <strong>um botão</strong> e ele executa todas as etapas na ordem certa. Se alguma etapa der erro, as seguintes não rodam, para não gerar dados incompletos.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Condição</th>
+<th>O que significa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Execuções <strong>encadeadas</strong> em uma JOB</td>
+<td>Os 5 notebooks são tarefas de um único Job (<code>job_lakehouse_medalhao</code>).</td>
+</tr>
+<tr>
+<td>Cada etapa executada <strong>sequencialmente</strong></td>
+<td>Cada tarefa depende da anterior (<code>depends_on</code>): 001 → 002 → 003 → 004 → 005.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="o-que-e-um-job">O que é um Job</h2>
+<p><strong>Jobs &amp; Pipelines</strong> é o orquestrador do Databricks. Um <strong>Job</strong> reúne várias <strong>tarefas</strong> (aqui, notebooks) e define a ordem e as dependências entre elas. Assim o pipeline inteiro roda com um clique, ou por agendamento, sem executar notebook por notebook, e uma etapa só começa se a anterior terminar com sucesso.</p>
+<h2 id="o-job-job_lakehouse_medalhao">O Job <code>job_lakehouse_medalhao</code></h2>
+<p>Cada tarefa depende da anterior (<code>depends_on</code>), formando a sequência da arquitetura medalhão:</p>
+<pre><code>001_preparando_ambiente → 002_extracao_para_landing → 003_landing_para_bronze → 004_bronze_para_silver → 005_silver_para_gold
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Tarefa</th>
+<th>Notebook</th>
+<th>Etapa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>001_preparando_ambiente</code></td>
+<td>Schemas e volume</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>002_extracao_para_landing</code></td>
+<td>Extração do PostgreSQL externo → LANDING/DADOS (CSV)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>003_landing_para_bronze</code></td>
+<td>Ingestão → BRONZE (Delta)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>004_bronze_para_silver</code></td>
+<td>Data Quality → SILVER</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>005_silver_para_gold</code></td>
+<td>Modelagem dimensional → GOLD</td>
+</tr>
+</tbody>
+</table>
+<p>Todas as tarefas usam computação <strong>serverless</strong>. A definição do Job está em <code>resources/job_medalhao.json</code> e pode ser recriada em <em>Jobs &amp; Pipelines → Create job → Edit as JSON</em>. O notebook <code>006_destruindo_ambiente</code> fica fora do Job, pois só serve para limpar o ambiente.</p>
+<p>Os dados de conexão do banco externo são <strong>parâmetros do Job</strong> (<code>pg_host</code>, <code>pg_port</code>, <code>pg_database</code>, <code>pg_user</code>, <code>pg_password</code>, <code>pg_schema</code>). No JSON versionado a senha é só um marcador; o valor real é preenchido no Databricks.</p>
+<p><img alt="Job" src="../img/07_job.jpg" /></p>
+<h2 id="execucao">Execução</h2>
+<p>Execução completa com sucesso: as 5 tarefas em sequência, em 2m 4s, partindo do ambiente vazio (após o <code>006</code>), extraindo os dados do PostgreSQL externo (Supabase).</p>
+<table>
+<thead>
+<tr>
+<th>Tarefa</th>
+<th>Status</th>
+<th>Duração</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>001_preparando_ambiente</td>
+<td>Succeeded</td>
+<td>13s</td>
+</tr>
+<tr>
+<td>002_extracao_para_landing</td>
+<td>Succeeded</td>
+<td>28s</td>
+</tr>
+<tr>
+<td>003_landing_para_bronze</td>
+<td>Succeeded</td>
+<td>18s</td>
+</tr>
+<tr>
+<td>004_bronze_para_silver</td>
+<td>Succeeded</td>
+<td>20s</td>
+</tr>
+<tr>
+<td>005_silver_para_gold</td>
+<td>Succeeded</td>
+<td>41s</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Execução do Job" src="../img/08_job_execucao.jpg" /></p>
+<h2 id="resultado-no-catalogo">Resultado no catálogo</h2>
+<p>Depois da execução, o catálogo <code>workspace</code> contém os schemas <code>landing</code>, <code>bronze</code>, <code>silver</code> e <code>gold</code> (a origem fica fora do Databricks):</p>
+<p><img alt="Catálogo" src="../img/09_catalogo.jpg" /></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../gold/" class="btn btn-neutral float-left" title="4. Modelagem (Gold)"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../gold/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

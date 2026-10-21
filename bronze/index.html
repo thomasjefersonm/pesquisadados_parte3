@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>2. Ingestão (Bronze) - Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "2. Ingest\u00e3o (Bronze)";
+        var mkdocs_page_input_path = "bronze.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Contextualização</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ambiente/">Ambiente Databricks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../extracao/">1. Extração (Landing)</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">2. Ingestão (Bronze)</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#o-que-e-a-camada-bronze">O que é a camada bronze</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#como-funciona">Como funciona</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resultado-bronzepedidos">Resultado – bronze.pedidos</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../silver/">3. Data Quality (Silver)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../gold/">4. Modelagem (Gold)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../job/">5. Jobs & Pipelines</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">2. Ingestão (Bronze)</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3/edit/main/docs/bronze.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="2-ingestao-bronze">2. Ingestão → BRONZE</h1>
+<p>Notebook: <code>003_landing_para_bronze</code></p>
+<p><img alt="Ingestão bronze" src="../assets/diagramas/bronze.svg" /></p>
+<blockquote>
+<p><strong>Em poucas palavras:</strong> os arquivos CSV são transformados em tabelas "inteligentes" (Delta Lake), que lembram cada alteração feita e nunca ficam pela metade. Os dados continuam exatamente como vieram; só ganham uma etiqueta dizendo <strong>quando</strong> e <strong>de qual arquivo</strong> foram carregados.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Condição</th>
+<th>O que significa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ler os arquivos da <strong>LANDING/DADOS</strong></td>
+<td>Cada CSV do volume vira uma tabela em memória (DataFrame).</td>
+</tr>
+<tr>
+<td>Gravar em <strong>DELTA LAKE</strong></td>
+<td>As tabelas são salvas no formato Delta, com histórico e transações seguras.</td>
+</tr>
+<tr>
+<td>Schema <strong>BRONZE</strong></td>
+<td>Todas ficam no schema <code>bronze</code>, como tabelas gerenciadas pelo Databricks.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="o-que-e-a-camada-bronze">O que é a camada bronze</h2>
+<p>A <strong>bronze</strong> guarda os dados <strong>brutos (raw)</strong>, sem nenhuma regra de negócio, mas já no formato <strong>Delta Lake</strong>. Em relação aos CSVs da landing, o Delta acrescenta transações ACID, histórico de versões (<em>time travel</em>) e schema registrado no catálogo, os mesmos recursos estudados nos trabalhos 1 e 2.</p>
+<h2 id="como-funciona">Como funciona</h2>
+<ol>
+<li><code>display(dbutils.fs.ls(...))</code> mostra os arquivos disponíveis no volume.</li>
+<li>Um DataFrame é criado para cada CSV, com <code>header</code> e <code>inferSchema</code>.</li>
+<li>Cada DataFrame recebe duas colunas de <strong>metadado</strong> para rastreabilidade:<ul>
+<li><code>data_hora_bronze</code>: data e hora do processamento;</li>
+<li><code>nome_arquivo</code>: arquivo de origem na landing.</li>
+</ul>
+</li>
+<li>Os DataFrames são gravados com <code>saveAsTable</code>, gerando tabelas <strong>MANAGED</strong> no schema <code>bronze</code>.</li>
+</ol>
+<pre><code class="language-python">df_clientes = spark.read.option(&quot;inferSchema&quot;, &quot;true&quot;).option(&quot;header&quot;, &quot;true&quot;).csv(f&quot;{caminho_landing}/clientes.csv&quot;)
+df_pedidos  = spark.read.option(&quot;inferSchema&quot;, &quot;true&quot;).option(&quot;header&quot;, &quot;true&quot;).csv(f&quot;{caminho_landing}/pedidos.csv&quot;)
+
+df_clientes = df_clientes.withColumn(&quot;data_hora_bronze&quot;, current_timestamp()).withColumn(&quot;nome_arquivo&quot;, lit(&quot;clientes.csv&quot;))
+df_pedidos  = df_pedidos.withColumn(&quot;data_hora_bronze&quot;, current_timestamp()).withColumn(&quot;nome_arquivo&quot;, lit(&quot;pedidos.csv&quot;))
+
+df_clientes.write.format('delta').mode(&quot;overwrite&quot;).saveAsTable(&quot;bronze.clientes&quot;)
+df_pedidos.write.format('delta').mode(&quot;overwrite&quot;).saveAsTable(&quot;bronze.pedidos&quot;)
+</code></pre>
+<p>No fim, <code>SHOW TABLES</code>, <code>DESCRIBE DETAIL</code> e <code>DESCRIBE EXTENDED</code> confirmam que as tabelas são Delta e do tipo <strong>MANAGED</strong>.</p>
+<h2 id="resultado-bronzepedidos">Resultado – <code>bronze.pedidos</code></h2>
+<table>
+<thead>
+<tr>
+<th>id_pedido</th>
+<th>id_cliente</th>
+<th>produto</th>
+<th>quantidade</th>
+<th>valor_unitario</th>
+<th>data_pedido</th>
+<th>status</th>
+<th>nome_arquivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>101</td>
+<td>1</td>
+<td>Notebook</td>
+<td>1</td>
+<td>4500.0</td>
+<td>2026-09-01</td>
+<td>PAGO</td>
+<td>pedidos.csv</td>
+</tr>
+<tr>
+<td>102</td>
+<td>2</td>
+<td>Mouse</td>
+<td>2</td>
+<td>80.0</td>
+<td>2026-09-02</td>
+<td>PAGO</td>
+<td>pedidos.csv</td>
+</tr>
+<tr>
+<td>103</td>
+<td>3</td>
+<td>Monitor</td>
+<td>1</td>
+<td>1200.0</td>
+<td>2026-09-03</td>
+<td>PENDENTE</td>
+<td>pedidos.csv</td>
+</tr>
+<tr>
+<td>104</td>
+<td>1</td>
+<td>Teclado</td>
+<td>1</td>
+<td>250.0</td>
+<td>2026-09-05</td>
+<td>PENDENTE</td>
+<td>pedidos.csv</td>
+</tr>
+<tr>
+<td>105</td>
+<td>4</td>
+<td>Headset</td>
+<td>1</td>
+<td>300.0</td>
+<td>2026-09-06</td>
+<td>CANCELADO</td>
+<td>pedidos.csv</td>
+</tr>
+</tbody>
+</table>
+<p>Note que <code>valor_unitario</code> chega como número decimal comum (<code>double</code>), pois o CSV não carrega o tipo original <code>DECIMAL(10,2)</code>. A correção do tipo é feita na silver.</p>
+<p><img alt="Bronze" src="../img/04_bronze.jpg" /></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../extracao/" class="btn btn-neutral float-left" title="1. Extração (Landing)"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../silver/" class="btn btn-neutral float-right" title="3. Data Quality (Silver)">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../extracao/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../silver/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

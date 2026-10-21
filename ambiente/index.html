@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Ambiente Databricks - Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Ambiente Databricks";
+        var mkdocs_page_input_path = "ambiente.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Contextualização</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Ambiente Databricks</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#databricks-free-edition">Databricks Free Edition</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#unity-catalog">Unity Catalog</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#git-folder">Git folder</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#banco-de-dados-de-origem-externo-ao-databricks">Banco de dados de origem (externo ao Databricks)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#notebook-001-preparando-o-ambiente">Notebook 001 – Preparando o ambiente</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#notebook-006-destruindo-o-ambiente">Notebook 006 – Destruindo o ambiente</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../extracao/">1. Extração (Landing)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../bronze/">2. Ingestão (Bronze)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../silver/">3. Data Quality (Silver)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../gold/">4. Modelagem (Gold)</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../job/">5. Jobs & Pipelines</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Parte 3 - Lakehouse com Databricks e Arquitetura Medalhão</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Ambiente Databricks</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3/edit/main/docs/ambiente.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="ambiente-databricks">Ambiente Databricks</h1>
+<blockquote>
+<p><strong>Em poucas palavras:</strong> o Databricks é um "escritório de dados" pronto na nuvem. Basta entrar pelo navegador: o banco de dados, as pastas de arquivos, as tabelas e a automação ficam todos no mesmo lugar, sem instalar nada no computador.</p>
+</blockquote>
+<h2 id="databricks-free-edition">Databricks Free Edition</h2>
+<p>O <strong>Databricks</strong> é uma plataforma de dados em nuvem no modelo <strong>PaaS</strong> (<em>Platform as a Service</em>): o grupo não instala nem administra servidores, Spark ou armazenamento, apenas usa os recursos prontos da plataforma. A <strong>Free Edition</strong> é a versão gratuita, com computação <strong>serverless</strong> (o cluster é criado e desligado automaticamente a cada execução).</p>
+<p>Nos trabalhos 1 e 2 o pipeline rodava localmente, com Docker (SQL Server e MinIO), Spark e Delta Lake instalados na máquina. Neste trabalho o banco de origem continua <strong>fora</strong> do Databricks (um PostgreSQL na nuvem); <strong>dentro</strong> do Databricks ficam a extração, os arquivos brutos, as tabelas Delta, a modelagem dimensional e a orquestração.</p>
+<table>
+<thead>
+<tr>
+<th>Trabalho 2 (local)</th>
+<th>Trabalho 3 (Databricks)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Server em Docker (<code>LojaDB</code>)</td>
+<td>PostgreSQL externo na nuvem (<code>LojaDB</code>)</td>
+</tr>
+<tr>
+<td>Bucket <code>landing-zone</code> no MinIO</td>
+<td>Volume <code>workspace.landing.dados</code></td>
+</tr>
+<tr>
+<td>Bucket <code>bronze</code> no MinIO</td>
+<td>Schema <code>workspace.bronze</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td>Schema <code>workspace.silver</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td>Schema <code>workspace.gold</code></td>
+</tr>
+<tr>
+<td>Execução manual dos notebooks no JupyterLab</td>
+<td>Job em <strong>Jobs &amp; Pipelines</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="unity-catalog">Unity Catalog</h2>
+<p>O <strong>Unity Catalog</strong> é a camada de governança do Databricks e organiza os objetos em três níveis: <code>catalogo.schema.objeto</code>. Todo o trabalho usa o catálogo padrão da Free Edition, chamado <code>workspace</code>.</p>
+<ul>
+<li><strong>Schema (database)</strong>: agrupa tabelas e volumes de uma camada (<code>bronze</code>, <code>silver</code>, <code>gold</code>...).</li>
+<li><strong>Volume</strong>: área de armazenamento de <strong>arquivos</strong> (CSV, JSON...) dentro de um schema, acessada pelo caminho <code>/Volumes/catalogo/schema/volume</code>.</li>
+<li><strong>Tabela MANAGED (gerenciada)</strong>: o Databricks controla os metadados <strong>e</strong> os arquivos físicos; ao apagar a tabela, os dados também são apagados. Todas as tabelas deste trabalho são gerenciadas (gravadas com <code>saveAsTable</code>, sem <code>LOCATION</code>).</li>
+</ul>
+<p><img alt="Catálogo" src="../img/09_catalogo.jpg" /></p>
+<h2 id="git-folder">Git folder</h2>
+<p>O repositório do GitHub foi importado no Databricks como <strong>Git folder</strong> (<em>Workspace → Create → Git folder</em>). Assim os notebooks executados são exatamente os versionados no GitHub, e alterações são sincronizadas com <em>Pull</em>.</p>
+<p><img alt="Git folder" src="../img/01_git_folder.jpg" /></p>
+<h2 id="banco-de-dados-de-origem-externo-ao-databricks">Banco de dados de origem (externo ao Databricks)</h2>
+<p>O banco de origem é um <strong>PostgreSQL gerenciado na nuvem</strong> (Supabase/Neon, plano gratuito), <strong>fora do Databricks</strong>, como no trabalho 2 (em que a origem era um SQL Server em Docker). O Databricks não é um banco transacional: ele só <strong>extrai</strong> os dados da origem e processa as camadas da arquitetura medalhão.</p>
+<ol>
+<li>Criar o projeto/banco no Supabase ou Neon.</li>
+<li>Executar o script <a href="https://github.com/thomasjefersonm/pesquisadados_parte3/blob/main/sql/lojadb_postgres.sql"><code>sql/lojadb_postgres.sql</code></a> no SQL Editor do serviço (cria e popula <code>clientes</code> e <code>pedidos</code>).</li>
+<li>Copiar host, porta, banco, usuário e senha da conexão e informar como <strong>parâmetros do Job</strong> (<code>pg_host</code>, <code>pg_port</code>, <code>pg_database</code>, <code>pg_user</code>, <code>pg_password</code>). A senha não é versionada no GitHub.</li>
+</ol>
+<h2 id="notebook-001-preparando-o-ambiente">Notebook 001 – Preparando o ambiente</h2>
+<p>Cria todos os objetos usados pelo pipeline:</p>
+<pre><code class="language-sql">CREATE SCHEMA IF NOT EXISTS workspace.landing
+COMMENT 'Schema/Database para dados brutos (landing)';
+
+CREATE VOLUME IF NOT EXISTS workspace.landing.dados
+COMMENT 'Volume para dados brutos criados no schema/database landing';
+
+CREATE SCHEMA IF NOT EXISTS workspace.bronze
+COMMENT 'Schema/Database para dados bronze (delta)';
+
+CREATE SCHEMA IF NOT EXISTS workspace.silver
+COMMENT 'Schema/Database para dados silver (delta)';
+
+CREATE SCHEMA IF NOT EXISTS workspace.gold
+COMMENT 'Schema/Database para dados gold (delta) - modelagem dimensional';
+</code></pre>
+<p>Nenhuma tabela de origem é criada no Databricks: as tabelas <code>clientes</code> e <code>pedidos</code> ficam no PostgreSQL externo.</p>
+<p><img alt="Banco de origem LojaDB no PostgreSQL externo" src="../img/02_origem_lojadb.jpg" /></p>
+<h2 id="notebook-006-destruindo-o-ambiente">Notebook 006 – Destruindo o ambiente</h2>
+<p>Apaga todos os schemas com <code>DROP SCHEMA ... CASCADE</code> (tabelas e volume juntos) e confirma com <code>SHOW SCHEMAS IN workspace</code>. Serve para recomeçar do zero e <strong>não</strong> faz parte do Job.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Contextualização"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../extracao/" class="btn btn-neutral float-right" title="1. Extração (Landing)">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/thomasjefersonm/pesquisadados_parte3" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../extracao/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
