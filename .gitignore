@@ -1,5 +1,11 @@
-site/
 .venv/
 __pycache__/
+*.pyc
 .ipynb_checkpoints/
-.DS_Store
+.env
+site/
+spark-warehouse/
+metastore_db/
+derby.log
+.pytest_cache/
+.ruff_cache/

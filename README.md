@@ -101,15 +101,21 @@ Job `job_lakehouse_medalhao` com as tarefas `001 → 002 → 003 → 004 → 005
 
 ## Documentação (MkDocs)
 ```bash
-mkdocs serve       # visualizar em http://127.0.0.1:8000
-mkdocs gh-deploy   # publicar no GitHub Pages
+uv sync
+uv run task docs     # visualizar em http://127.0.0.1:8000
+uv run task deploy   # publicar no GitHub Pages (mkdocs gh-deploy)
 ```
+A cada push na `main`, o workflow `.github/workflows/docs.yml` também publica a documentação automaticamente.
 
 ## Estrutura
 ```
 pesquisadados_parte3/
 ├── README.md
+├── .python-version           # Python 3.11
+├── .gitignore
+├── pyproject.toml            # dependências da documentação (UV) e atalhos (taskipy)
 ├── mkdocs.yml
+├── .github/workflows/        # publicação do MkDocs no GitHub Pages
 ├── notebooks/
 │   ├── 001_preparando_ambiente.py
 │   ├── 002_extracao_para_landing.py
