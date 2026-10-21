@@ -34,15 +34,15 @@ Os dados de conexão do banco externo são **parâmetros do Job** (`pg_host`, `p
 ![Job](img/07_job.jpg)
 
 ## Execução
-Execução completa com sucesso: as 5 tarefas em sequência, em 2m 54s, extraindo os dados do PostgreSQL externo (Supabase).
+Execução completa com sucesso: as 5 tarefas em sequência, em 2m 4s, partindo do ambiente vazio (após o `006`), extraindo os dados do PostgreSQL externo (Supabase).
 
 | Tarefa | Status | Duração |
 |---|---|---|
-| 001_preparando_ambiente | Succeeded | 37s |
-| 002_extracao_para_landing | Succeeded | 31s |
-| 003_landing_para_bronze | Succeeded | 34s |
-| 004_bronze_para_silver | Succeeded | 23s |
-| 005_silver_para_gold | Succeeded | 44s |
+| 001_preparando_ambiente | Succeeded | 13s |
+| 002_extracao_para_landing | Succeeded | 28s |
+| 003_landing_para_bronze | Succeeded | 18s |
+| 004_bronze_para_silver | Succeeded | 20s |
+| 005_silver_para_gold | Succeeded | 41s |
 
 ![Execução do Job](img/08_job_execucao.jpg)
 
