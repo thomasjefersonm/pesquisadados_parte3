@@ -3,6 +3,10 @@ repo_url: https://github.com/thomasjefersonm/pesquisadados_parte3
 edit_uri: edit/main/docs/
 nav:
   - Contextualização: index.md
-  - Pipeline medalhão: pipeline.md
-  - Jobs & Pipelines: job.md
+  - Ambiente Databricks: ambiente.md
+  - 1. Extração (Landing): extracao.md
+  - 2. Ingestão (Bronze): bronze.md
+  - 3. Data Quality (Silver): silver.md
+  - 4. Modelagem (Gold): gold.md
+  - 5. Jobs & Pipelines: job.md
 theme: readthedocs

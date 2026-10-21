@@ -48,21 +48,21 @@ O notebook `001_preparando_ambiente` cria o banco relacional de origem `lojadb` 
 ### 1. Importar o repositório no Databricks
 *Workspace → Create → Git folder*, com a URL `https://github.com/thomasjefersonm/pesquisadados_parte3.git`.
 
-![Git folder](docs/img/01_git_folder.png)
+![Git folder](docs/img/01_git_folder.jpg)
 
 ### 2. Preparando o ambiente (`001_preparando_ambiente`)
 
-![Preparando ambiente](docs/img/02_preparando_ambiente.png)
+![Preparando ambiente](docs/img/02_origem_lojadb.jpg)
 
 ### 3. Extração → LANDING/DADOS (`002_extracao_para_landing`)
 Lista todas as tabelas do `lojadb` e grava um CSV por tabela em `/Volumes/workspace/landing/dados`.
 
-![Landing](docs/img/03_landing.png)
+![Landing](docs/img/03_landing.jpg)
 
 ### 4. Ingestão → BRONZE (`003_landing_para_bronze`)
 Lê os CSVs e grava tabelas Delta MANAGED no schema `bronze`, com as colunas `data_hora_bronze` e `nome_arquivo`.
 
-![Bronze](docs/img/04_bronze.png)
+![Bronze](docs/img/04_bronze.jpg)
 
 ### 5. Data Quality → SILVER (`004_bronze_para_silver`)
 
@@ -75,7 +75,7 @@ Lê os CSVs e grava tabelas Delta MANAGED no schema `bronze`, com as colunas `da
 | Regras de negócio | Descarta quantidade e valor menores ou iguais a zero; calcula `VALOR_TOTAL` |
 | Auditoria | `NOME_ARQUIVO_BRONZE` e `DATA_ARQUIVO_SILVER` |
 
-![Silver](docs/img/05_silver.png)
+![Silver](docs/img/05_silver.jpg)
 
 ### 6. Modelagem dimensional → GOLD (`005_silver_para_gold`)
 Modelo estrela (Ralph Kimball), com chaves substitutas (`SK_`) e carga por `MERGE` (SCD1):
@@ -86,18 +86,18 @@ Modelo estrela (Ralph Kimball), com chaves substitutas (`SK_`) e carga por `MERG
 dim_produto ── fato_pedidos ── dim_tempo
 ```
 
-![Gold](docs/img/06_gold.png)
+![Gold](docs/img/06_gold_fato_pedidos.jpg)
 
 ### 7. Jobs & Pipelines
 Job `job_lakehouse_medalhao` com as tarefas `001 → 002 → 003 → 004 → 005`, cada uma dependente da anterior. Definição em [`resources/job_medalhao.json`](resources/job_medalhao.json) (*Jobs & Pipelines → Create job → Edit as JSON*).
 
-![Job](docs/img/07_job.png)
+![Job](docs/img/07_job.jpg)
 
-![Execução do Job](docs/img/08_job_execucao.png)
+![Execução do Job](docs/img/08_job_execucao.jpg)
 
 ### 8. Catálogo
 
-![Catálogo](docs/img/09_catalogo.png)
+![Catálogo](docs/img/09_catalogo.jpg)
 
 ## Documentação (MkDocs)
 ```bash
