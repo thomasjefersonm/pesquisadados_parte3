@@ -2,6 +2,16 @@
 
 Notebook: `003_landing_para_bronze`
 
+![Ingestão bronze](assets/diagramas/bronze.svg)
+
+> **Em poucas palavras:** os arquivos CSV são transformados em tabelas "inteligentes" (Delta Lake), que lembram cada alteração feita e nunca ficam pela metade. Os dados continuam exatamente como vieram; só ganham uma etiqueta dizendo **quando** e **de qual arquivo** foram carregados.
+
+| Condição | O que significa |
+|---|---|
+| Ler os arquivos da **LANDING/DADOS** | Cada CSV do volume vira uma tabela em memória (DataFrame). |
+| Gravar em **DELTA LAKE** | As tabelas são salvas no formato Delta, com histórico e transações seguras. |
+| Schema **BRONZE** | Todas ficam no schema `bronze`, como tabelas gerenciadas pelo Databricks. |
+
 ## O que é a camada bronze
 A **bronze** guarda os dados **brutos (raw)**, sem nenhuma regra de negócio, mas já no formato **Delta Lake**. Em relação aos CSVs da landing, o Delta acrescenta transações ACID, histórico de versões (*time travel*) e schema registrado no catálogo, os mesmos recursos estudados nos trabalhos 1 e 2.
 

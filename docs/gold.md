@@ -2,6 +2,16 @@
 
 Notebook: `005_silver_para_gold`
 
+![Modelo estrela gold](assets/diagramas/gold.svg)
+
+> **Em poucas palavras:** os dados são reorganizados em formato de **estrela**. No centro fica a tabela de pedidos (o que aconteceu, com quantidades e valores) e, ao redor, as tabelas que explicam cada pedido: **quem** comprou, **o que** comprou e **quando**. Assim fica fácil responder perguntas como "quanto cada estado comprou?".
+
+| Condição | O que significa |
+|---|---|
+| Ler os dados da **SILVER** | Usa apenas os dados já revisados. |
+| Alimentar as **tabelas dimensionais (Ralph Kimball)** | Cria a fato `fato_pedidos` e as dimensões `dim_cliente`, `dim_produto` e `dim_tempo`. |
+| Schema **GOLD** | As tabelas finais ficam no schema `gold`, prontas para relatórios e dashboards. |
+
 ## O que é a camada gold
 A **gold** contém os dados **prontos para consumo analítico** (BI, dashboards, relatórios), organizados segundo a **modelagem dimensional de Ralph Kimball**.
 

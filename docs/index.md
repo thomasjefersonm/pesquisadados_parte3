@@ -40,9 +40,32 @@ CREATE TABLE workspace.lojadb.pedidos (
 ```
 
 ## Arquitetura
-```
-lojadb (origem) ──▶ LANDING/DADOS (CSV) ──▶ BRONZE (Delta) ──▶ SILVER (Delta) ──▶ GOLD (Kimball)
-```
+![Visão geral da arquitetura medalhão](assets/diagramas/visao_geral.svg)
+
+> **Em poucas palavras:** os dados saem do banco da loja, passam por quatro "estações" (landing, bronze, silver e gold) e, a cada estação, ficam mais organizados e confiáveis, como um minério que é extraído, lavado, refinado e transformado em joia. Um **Job** liga todas as estações e faz o caminho inteiro com um clique.
+
+| Camada | Pergunta que responde | Em linguagem simples |
+|---|---|---|
+| **Origem** (`lojadb`) | De onde vêm os dados? | O banco de dados da loja, com clientes e pedidos. |
+| **Landing** | Os dados foram copiados? | Uma "caixa de entrada" com a cópia dos dados em arquivos CSV, sem nenhuma alteração. |
+| **Bronze** | Os dados estão guardados com segurança? | Os mesmos dados, agora em tabelas Delta, que registram o histórico e protegem contra gravações pela metade. |
+| **Silver** | Os dados estão corretos? | Os dados revisados: nomes padronizados, tipos corrigidos, sem duplicados e sem valores inválidos. |
+| **Gold** | Os dados estão prontos para análise? | Os dados organizados para responder perguntas de negócio, como "quanto vendemos por estado?". |
+
+## Termos em linguagem simples
+
+| Termo | Significado |
+|---|---|
+| **Databricks** | Plataforma na nuvem para trabalhar com dados; dispensa instalar programas no computador. |
+| **Notebook** | Documento com blocos de código que são executados em ordem, com o resultado logo abaixo de cada bloco. |
+| **Schema** | Uma "pasta" que agrupa tabelas de um mesmo assunto ou camada. |
+| **Volume** | Uma "pasta" para guardar arquivos (como CSV) dentro do Databricks. |
+| **CSV** | Arquivo de texto em formato de planilha: uma linha por registro e colunas separadas por vírgula. |
+| **Delta Lake** | Formato de tabela que guarda o histórico de alterações e nunca deixa uma gravação pela metade. |
+| **Data Quality** | Conjunto de verificações para garantir que os dados estão corretos e padronizados. |
+| **Fato** | Tabela que registra os acontecimentos do negócio (cada pedido) e seus números (quantidade, valor). |
+| **Dimensão** | Tabela que descreve o contexto dos fatos: quem comprou, o que comprou e quando. |
+| **Job** | Uma "receita" que executa todos os notebooks na ordem certa, de forma automática. |
 
 ## Notebooks
 Executados em ordem, na pasta `notebooks/`: `001_preparando_ambiente`, `002_extracao_para_landing`, `003_landing_para_bronze`, `004_bronze_para_silver` e `005_silver_para_gold`. O `006_destruindo_ambiente` limpa o ambiente e não faz parte do Job.

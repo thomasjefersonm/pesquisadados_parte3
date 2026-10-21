@@ -2,6 +2,16 @@
 
 Notebook: `004_bronze_para_silver`
 
+![Data Quality silver](assets/diagramas/silver.svg)
+
+> **Em poucas palavras:** é a etapa de revisão. Como um revisor de texto, o notebook corrige nomes, padroniza a escrita, confere se os números fazem sentido e remove o que estiver repetido ou errado. Só o que passa em todas as verificações vai para a silver.
+
+| Condição | O que significa |
+|---|---|
+| Ler **todos** os dados da **BRONZE** | As duas tabelas da bronze são carregadas. |
+| Aplicar **Data Quality** | Validações, limpezas e regras de negócio (veja a tabela abaixo). |
+| Gravar no schema **SILVER** | O resultado confiável fica no schema `silver`. |
+
 ## O que é a camada silver
 A **silver** contém os dados **confiáveis**: limpos, padronizados, tipados e validados. É a camada que serve de base para a modelagem dimensional; qualquer problema de qualidade deve ser resolvido aqui, e não na gold.
 

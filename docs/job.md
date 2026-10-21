@@ -1,5 +1,14 @@
 # 5. Jobs & Pipelines
 
+![Fluxo do Job](assets/diagramas/job.svg)
+
+> **Em poucas palavras:** em vez de abrir e rodar cada notebook manualmente, o Job funciona como uma linha de produção: aperta-se **um botão** e ele executa todas as etapas na ordem certa. Se alguma etapa der erro, as seguintes não rodam, para não gerar dados incompletos.
+
+| Condição | O que significa |
+|---|---|
+| Execuções **encadeadas** em uma JOB | Os 5 notebooks são tarefas de um único Job (`job_lakehouse_medalhao`). |
+| Cada etapa executada **sequencialmente** | Cada tarefa depende da anterior (`depends_on`): 001 → 002 → 003 → 004 → 005. |
+
 ## O que é um Job
 **Jobs & Pipelines** é o orquestrador do Databricks. Um **Job** reúne várias **tarefas** (aqui, notebooks) e define a ordem e as dependências entre elas. Assim o pipeline inteiro roda com um clique, ou por agendamento, sem executar notebook por notebook, e uma etapa só começa se a anterior terminar com sucesso.
 

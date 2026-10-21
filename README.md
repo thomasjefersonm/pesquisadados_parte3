@@ -13,14 +13,9 @@ Engenharia de Dados · Engenharia de Software 5ª fase · SATC · Prof. Jorge Lu
 
 ## Arquitetura
 
-```
-┌──────────┐   ┌───────────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
-│  lojadb  │──▶│ LANDING/DADOS │──▶│  BRONZE  │──▶│  SILVER  │──▶│   GOLD   │
-│ (origem) │   │     (CSV)     │   │ (Delta)  │   │ (Delta)  │   │ (Kimball)│
-└──────────┘   └───────────────┘   └──────────┘   └──────────┘   └──────────┘
-                  Notebook 002      Notebook 003   Notebook 004   Notebook 005
-       └────────── Job (Jobs & Pipelines): 001 → 002 → 003 → 004 → 005 ──────────┘
-```
+![Arquitetura medalhão](docs/assets/diagramas/visao_geral.svg)
+
+> Os dados saem do banco da loja e passam por quatro camadas (landing, bronze, silver e gold), ficando mais organizados e confiáveis a cada etapa. Um Job executa todo o caminho automaticamente.
 
 | # | Etapa | Notebook | Origem → Destino | Formato |
 |---|---|---|---|---|

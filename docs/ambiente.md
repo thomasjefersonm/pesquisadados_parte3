@@ -1,5 +1,7 @@
 # Ambiente Databricks
 
+> **Em poucas palavras:** o Databricks é um "escritório de dados" pronto na nuvem. Basta entrar pelo navegador: o banco de dados, as pastas de arquivos, as tabelas e a automação ficam todos no mesmo lugar, sem instalar nada no computador.
+
 ## Databricks Free Edition
 O **Databricks** é uma plataforma de dados em nuvem no modelo **PaaS** (*Platform as a Service*): o grupo não instala nem administra servidores, Spark ou armazenamento, apenas usa os recursos prontos da plataforma. A **Free Edition** é a versão gratuita, com computação **serverless** (o cluster é criado e desligado automaticamente a cada execução).
 
